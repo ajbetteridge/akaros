@@ -15,7 +15,7 @@ __thread bool __vcore_context = FALSE;
 
 void __uthread_vcore_entry(void)
 {
-	fputs("Define a uthread_vcore_entry() or a vcore_entry(), foo!\n", stderr);
+//	fputs("Define a uthread_vcore_entry() or a vcore_entry(), foo!\n", stderr);
 	abort();
 }
 weak_alias(__uthread_vcore_entry, uthread_vcore_entry)
@@ -28,7 +28,7 @@ weak_alias(__vcore_entry, vcore_entry)
 
 void __vcore_event_init(void)
 {
-	fputs("Build your application with -lparlib\n", stderr);
+//	fputs("Build your application with -lparlib\n", stderr);
 	abort();
 }
 weak_alias(__vcore_event_init, vcore_event_init)

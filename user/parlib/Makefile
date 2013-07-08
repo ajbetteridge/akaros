@@ -1,5 +1,5 @@
 ARCH ?= none	# catch bugs
-CFLAGS_USER += -static -fomit-frame-pointer -g
+CFLAGS_USER += -static -fomit-frame-pointer -g -fPIC
 LIBNAME = parlib
 
 SRCDIR := 
@@ -7,7 +7,8 @@ OBJDIR := $(SRCDIR)obj
 INCDIR = $(SRCDIR)include
 
 INCS = -I. -I$(INCDIR) 
-FINALLIB = $(OBJDIR)/lib$(LIBNAME).a
+FINALLIBA = $(OBJDIR)/lib$(LIBNAME).a
+FINALLIBSO = $(OBJDIR)/lib$(LIBNAME).so
 
 uc = $(shell echo $(1) | tr a-z A-Z)
 
@@ -19,7 +20,7 @@ SFILES  := $(wildcard $(SRCDIR)$(ARCH)/*.S)
 OBJS    := $(patsubst %.c, $(OBJDIR)/%.o, $(CFILES)) \
            $(patsubst %.S, $(OBJDIR)/%.o, $(SFILES))
 
-all: $(FINALLIB)
+all: $(FINALLIBA) $(FINALLIBSO)
 	@:
 
 $(OBJDIR)/$(ARCH)/%.o: $(SRCDIR)$(ARCH)/%.S $(HEADERS)
@@ -32,19 +33,28 @@ $(OBJDIR)/%.o: $(SRCDIR)%.c $(HEADERS)
 	@mkdir -p $(@D)
 	$(Q)$(CC) $(CFLAGS_USER) $(INCS) -o $@ -c $<
 
-$(FINALLIB): $(OBJS)
+$(FINALLIBA): $(OBJS)
 	@echo + ar [$(LIBUCNAME)] $@
 	@mkdir -p $(@D)
 	$(Q)$(AR) rc $@ $(OBJS)
 
-install: $(FINALLIB)
-	@cp $(FINALLIB) $(XCC_TARGET_ROOT)/lib/
+$(FINALLIBSO): $(FINALLIBA)
+	@echo + ld [$(LIBUCNAME)] $@
+	@mkdir -p $(@D)
+	$(Q)$(CC) -shared -nostdlib -o $(FINALLIBSO) \
+	          -Wl,-soname,$(notdir $(FINALLIBSO)) \
+	          -Wl,--whole-archive,$(FINALLIBA)
+
+install: $(FINALLIBA) $(FINALLIBSO)
+	@cp $(FINALLIBA) $(XCC_TARGET_ROOT)/lib/
+	@cp $(FINALLIBSO) $(XCC_TARGET_ROOT)/lib/
 	@cp -R $(INCDIR)/* $(XCC_TARGET_ROOT)/sys-include/
 	@rm -rf $(XCC_TARGET_ROOT)/sys-include/parlib  
 	@ln -fs . $(XCC_TARGET_ROOT)/sys-include/parlib  
 
 clean: 
 	@echo + clean [$(LIBUCNAME)]
-	$(Q)rm -rf $(FINALLIB)
+	$(Q)rm -rf $(FINALLIBA)
+	$(Q)rm -rf $(FINALLIBSO)
 	$(Q)rm -rf $(OBJDIR)
 	
